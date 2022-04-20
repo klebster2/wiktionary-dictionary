@@ -7,7 +7,9 @@ on:
 jobs:
   build-pages:
     runs-on: ubuntu-20.04
+    
     steps:
-      - name: download
-        run: |
-          ./try_download.sh
+        - uses: actions/checkout@v2
+        - uses: sergeysova/jq-action@v2
+        - run: |
+           ./try_download.sh
