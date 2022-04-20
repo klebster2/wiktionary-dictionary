@@ -1,0 +1,13 @@
+# This is a basic workflow to help you get started with Actions
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '* * 2 * *' # Runs every 3rd of the Month
+
+jobs:
+  build-pages:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: download
+        run: |
+          ./try_download.sh
