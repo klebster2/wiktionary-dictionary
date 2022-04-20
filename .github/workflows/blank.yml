@@ -10,13 +10,9 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        persist-credentials: false
-        token: ${{ secrets.GH_API_TOKEN }}
+      uses: actions/checkout@master
+    - name: download jq
+      uses: sergeysova/jq-action@v2
     - name: download wiktext
-      env: 
-       COMMITTEXT: "${{ github.event.head_commit.message }}"
       run: |
          ./try_download.sh
