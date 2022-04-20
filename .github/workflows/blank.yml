@@ -9,7 +9,14 @@ jobs:
     runs-on: ubuntu-20.04
     
     steps:
-        - uses: actions/checkout@v2
-        - uses: sergeysova/jq-action@v2
-        - run: |
-           ./try_download.sh
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+        token: ${{ secrets.GH_API_TOKEN }}
+    - name: download wiktext
+      env: 
+       COMMITTEXT: "${{ github.event.head_commit.message }}"
+      run: |
+         ./try_download.sh
