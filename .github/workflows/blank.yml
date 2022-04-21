@@ -15,7 +15,7 @@ jobs:
       uses: sergeysova/jq-action@v2
     - name: download wiktext pronunciations
       run: |
-         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | .word as $WORD | .sounds[]  | select(.ipa != null and (select(.tags[] == "UK") or select(.tags == "Received-Pronunciation")) ) | del(.tags) | {ipa:.ipa, tags:.tags, word:$WORD}' | jq -r '[.word,.ipa] | @tsv' | awk -F $"\t" '!/^.*(\[.*\]|\-)$|[A-Z][A-Z]+/' | sed -r -e 's/\(ɹ\)//g;s/\.|\/|\(|\)//g' | grep -Pv "\-$" | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | head -n100 | sort > wiki_dict.tsv
+         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | .word as $WORD | .sounds[]  | select(.ipa != null and (select(.tags[] == "UK") or select(.tags == "Received-Pronunciation")) ) | del(.tags) | {ipa:.ipa, tags:.tags, word:$WORD}' | jq -r '[.word,.ipa] | @tsv' | awk -F $"\t" '!/^.*(\[.*\]|\-)$|[A-Z][A-Z]+/' | sed -r -e 's/\(ɹ\)//g;s/\.|\/|\(|\)//g' | grep -Pv "\-$" | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | sort > wiki_dict.tsv
     - name: Commit changes
       uses: EndBug/add-and-commit@v9
       with:
