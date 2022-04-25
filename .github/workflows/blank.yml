@@ -1,0 +1,25 @@
+# This is a basic workflow to help you get started with Actions
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '* * * 1 *' # Runs every 3rd of the Month
+
+jobs:
+  build-pages:
+    runs-on: ubuntu-20.04
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@master
+    - name: download jq
+      uses: sergeysova/jq-action@v2
+    - name: download wiktext pronunciations
+      run: |
+         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | .word as $WORD | .sounds[]  | select(.ipa != null and (select(.tags[] == "UK") or select(.tags == "Received-Pronunciation")) ) | del(.tags) | {ipa:.ipa, tags:.tags, word:$WORD}' | jq -r '[.word,.ipa] | @tsv' | awk -F $"\t" '!/^.*(\[.*\]|\-)$|[A-Z][A-Z]+/' | sed -r -e 's/\(ɹ\)//g;s/\.|\/|\(|\)//g' | grep -Pv "\-$" | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | sort > wiki_dict.tsv
+    - name: Commit changes
+      uses: EndBug/add-and-commit@v9
+      with:
+        author_name: wiktext-pron-adder-bot
+        author_email: ""
+        message: "updated wiki_dict.tsv"
+        add: wiki_dict.tsv
