@@ -2,7 +2,7 @@
 on:
   workflow_dispatch:
   schedule:
-    - cron: '* * * 1 *' # Runs every 3rd of the Month
+    - cron: '0 12 1 * *' # Runs every 3rd of the Month
 
 jobs:
   build-pages:
@@ -13,6 +13,10 @@ jobs:
       uses: actions/checkout@master
     - name: download jq
       uses: sergeysova/jq-action@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
     - name: download wiktext pronunciations
       run: |
          curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | {related: .related, derived: .derived, forms: .forms, pos: .pos, head_templates: .head_templates, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | python ./check_chars.py | gzip > wiki_dict.json.gz
