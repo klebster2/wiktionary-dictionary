@@ -2,7 +2,7 @@
 on:
   workflow_dispatch:
   schedule:
-    - cron: '* * * 1 *' # Runs every 3rd of the Month
+    - cron: '0 12 1 * *' # Runs every 3rd of the Month
 
 jobs:
   build-pages:
@@ -13,13 +13,17 @@ jobs:
       uses: actions/checkout@master
     - name: download jq
       uses: sergeysova/jq-action@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
     - name: download wiktext pronunciations
       run: |
-         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | .word as $WORD | .sounds[]  | select(.ipa != null and (select(.tags[] == "UK") or select(.tags == "Received-Pronunciation")) ) | del(.tags) | {ipa:.ipa, tags:.tags, word:$WORD}' | jq -r '[.word,.ipa] | @tsv' | awk -F $"\t" '!/^.*(\[.*\]|\-)$|[A-Z][A-Z]+/' | sed -r -e 's/\(ɹ\)//g;s/\.|\/|\(|\)//g' | grep -Pv "\-$" | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | sort > wiki_dict.tsv
+         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | {related: .related, derived: .derived, forms: .forms, pos: .pos, head_templates: .head_templates, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | python ./check_chars.py | gzip > wiki_dict.json.gz
     - name: Commit changes
       uses: EndBug/add-and-commit@v9
       with:
         author_name: wiktext-pron-adder-bot
         author_email: ""
-        message: "updated wiki_dict.tsv"
-        add: wiki_dict.tsv
+        message: "updated wiki_dict.json.gz"
+        add: wiki_dict.json.gz
