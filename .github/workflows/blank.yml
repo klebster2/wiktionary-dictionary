@@ -19,7 +19,7 @@ jobs:
         python-version: 3.8
     - name: download wiktext pronunciations
       run: |
-         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | {related: .related, derived: .derived, forms: .forms, pos: .pos, head_templates: .head_templates, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | python ./check_chars.py | 7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=o -si wiki_dict.json.7z
+         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | {related: .related, derived: .derived, forms: .forms, pos: .pos, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | python ./check_chars.py | 7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=o -si wiki_dict.json.7z
     - name: Commit changes
       uses: EndBug/add-and-commit@v9
       with:
