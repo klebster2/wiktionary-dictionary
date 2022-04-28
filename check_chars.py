@@ -144,7 +144,7 @@ while True:
 
                 
         entry.update({"sounds":sounds})
-        entry.update({"sense":sense})
+        entry.update({"senses":senses})
         print(json.dumps(entry))
 
     except Exception as e:
