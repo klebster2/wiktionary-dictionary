@@ -17,13 +17,17 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.8
-    - name: download wiktext pronunciations
+    - name: download wikipedia word frequencies, and wikitext etymologies / pos
       run: |
-         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | jq --raw-output -c '. | select(.lang_code=="en")? | {related: .related, derived: .derived, forms: .forms, pos: .pos, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | python ./check_chars.py | 7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=o -si wiki_dict.json.7z
+        python make_wikidict_online.py <(curl "https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2" ) wiki_dict
+        curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | \
+          jq --raw-output -c '. | select(.lang_code=="en")? | {word: .word, related: .related, derived: .derived, forms: .forms, pos: .pos, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | \
+          perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | \
+        python ./check_chars.py <(awk -F " " '{if ($2>20) {print $1} }' wiki_dict ) > etymologies.json
     - name: Commit changes
       uses: EndBug/add-and-commit@v9
       with:
-        author_name: wiktext-pron-adder-bot
+        author_name: wiki-etymology-adder-bot
         author_email: ""
-        message: "updated wiki_dict.json.gz"
-        add: wiki_dict.json.gz
+        message: "updated etymologies.json"
+        add: etymologies.json

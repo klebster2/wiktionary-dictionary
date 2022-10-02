@@ -1,6 +1,8 @@
 import sys
 import json
-from itertools import takewhile, islice, count
+from pathlib import Path
+#from itertools import takewhile, islice, count
+from ruamel.yaml import YAML
 import re
 from assets import (
     CONSONANTS,
@@ -112,42 +114,64 @@ def readInChunks(stream, chunkSize=2048):
             break
         return data
 
-#with open("./bigjj2", 'r') as f:
-while True:
-
-    chunk = sys.stdin.readline()   # f.readline() 
-    if not chunk:
-        break
-
-    try:
-        entry = json.loads(chunk)
-        sounds = []
-        for s in entry.get('sounds'):
-            if s.get('ipa'):
-                rejected, data = check_char({'ipa':s.get('ipa'),'tags':s.get('tags')})
-                if rejected:
-                    break
-                else:
-                    sounds.append(data)
-
-        if sounds.__len__() == 0:
+if __name__ == "__main__":
+    entries = []
+    counter = 0
+    while True: 
+        chunk = sys.stdin.readline()
+        counter+=1
+        if not chunk:
+            break
+        try:
+            entry = json.loads(chunk)
+            word = entry.get("word")
+            # def: Each word should be an actual word with 0 spaces
+            if not re.match("^[a-zA-Z]*[-.']*[a-zA-Z]+$", word):
+                continue
+            sounds = []
+            # clean sounds
+            for s in entry.get('sounds'):
+                if s.get('ipa'):
+                    rejected, data = check_char(
+                        {
+                            'ipa':s.get('ipa'),
+                            'tags':s.get('tags')
+                        }
+                    )
+                    if rejected:
+                        break
+                    else:
+                        sounds.append(data)
+            senses = []
+            for s in entry.get('senses'):
+                sense = s
+                if sense.get('raw_glosses'):
+                    del sense['raw_glosses']
+                if sense.get('categories'):
+                    del sense['categories']
+                senses.append(sense)
+            entry.update({"sounds":sounds})
+            entry.update({"senses":senses})
+            entries.append(entry)
+        except Exception as e:
             continue
 
-        senses = []
-        for s in entry.get('senses'):
-            sense = s
-            if sense.get('raw_glosses'):
-                del sense['raw_glosses']
-            if sense.get('categories'):
-                del sense['categories']
-            senses.append(sense)
+    wikipedia_list = [l.strip() for l in open(sys.argv[1], 'r').readlines()]
 
-                
-        entry.update({"sounds":sounds})
-        entry.update({"senses":senses})
-        print(json.dumps(entry))
+    # compress shared entries whereever possible
+    wiki_dict = {}
+    for loaded_line in entries:
+        word = loaded_line.get("word")
+        if not word in wikipedia_list:
+            continue
+        if word in wiki_dict.keys():
+            pos_list = wiki_dict[word]
+            del loaded_line["word"]  # use word as key
+            loaded_line_shortened = {'ety':loaded_line.get('etymology_text'), 'pos':loaded_line.get('pos')}
+            pos_list.append(loaded_line_shortened)
+            wiki_dict.update({word:pos_list})
+        else:
+            del loaded_line["word"]  # use word as key
+            wiki_dict.update({word:[{'ety':loaded_line.get('etymology_text'), 'pos':loaded_line.get('pos')}]})
+    print(json.dumps(wiki_dict, indent=2))
 
-    except Exception as e:
-        continue
-
-    
