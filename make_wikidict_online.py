@@ -308,11 +308,11 @@ def _job(current_lines:list):
 
 if __name__ == '__main__':
     program = os.path.basename(sys.argv[0].split('.')[0])
-    logger = logging.getLogger(program)
+    #logger = logging.getLogger(program)
 
-    logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s')
-    logging.root.setLevel(level=logging.INFO)
-    logger.info("running %s", ' '.join(sys.argv))
+    #logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s')
+    #logging.root.setLevel(level=logging.INFO)
+    #logger.info("running %s", ' '.join(sys.argv))
 
     # check and process input arguments
     if len(sys.argv) < 3:
@@ -320,10 +320,8 @@ if __name__ == '__main__':
         sys.exit(1)
     inp, outp = sys.argv[1:3]
     cpu_count = multiprocessing.cpu_count()
-
-    if not os.path.isdir(os.path.dirname(outp)):
-        os.makedirs(outp, exist_ok=True)
-
+    print(cpu_count)
+    cpu_count += 5
     online = 'online' in program
     debug = 'nodebug' not in program
 
