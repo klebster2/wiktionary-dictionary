@@ -13,6 +13,18 @@ jobs:
       uses: actions/checkout@master
     - name: download jq
       uses: sergeysova/jq-action@v2
+    - name: get wiki data
+      run: |
+         MAX_DOWNLOAD_PROCS=30; while IFS= read line; do \
+             ((current=current%MAX_DOWNLOAD_PROCS)) ; \
+             ((current++==0)) && wait; \
+             curl -Lo "${line/https:\/\/dumps.wikimedia.org\/enwiki\/latest\//}" $line & \
+         done< <( \
+             curl "https://dumps.wikimedia.org/enwiki/latest/" | \
+             grep -Po "\"enwiki-latest-pages-articles-multistream[0-9]+.xml-.*.bz2\"" | \
+             tr -d '"' | sed -re 's|^|https://dumps.wikimedia.org/enwiki/latest/|g;' | sort -u \
+         ) ; \
+         wait
     - name: Set up Python 3.8
       uses: actions/setup-python@v2
       with:
