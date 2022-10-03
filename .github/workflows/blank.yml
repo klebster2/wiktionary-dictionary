@@ -18,6 +18,7 @@ jobs:
       with:
         python-version: 3.8
     - name: download wikipedia word frequencies, and wikitext etymologies / pos
+      timeout-minutes: 780
       run: |
         python -m pip install lxml
         python make_wikidict_online.py <(curl "https://dumps.wikimedia.org/enwiki/latest/enwiki-latest-pages-articles.xml.bz2" ) wiki_dict
