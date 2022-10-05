@@ -62,10 +62,10 @@ if __name__ == "__main__":
     wikipedia_xml_dumps_jobs_sorted = \
             sorted(wikipedia_xml_dumps_jobs.items(), key=lambda x: x[1][2], reverse=True)
 
-    # 2 (cont.) try to do 8 jobs at a time (downloads, parsing, etc.)
+    # 2 (cont.) try to do 2 jobs at a time (downloads, parsing, etc.)
     #   concurrently despite possible bottlenecks
     #   at the time of writing there are 64 downloads to make in total
-    #   so a group size of 8 is an experimental amount
+    #   so a group size of 2 is an experimental amount
 
     GROUP_SIZE = 8
     # task executed in a worker process
@@ -88,6 +88,19 @@ if __name__ == "__main__":
             executable="/bin/bash",
         )
 
+    with concurrent.futures.ProcessPoolExecutor(2) as executor:
+        executor.map(_job, range(len(wikipedia_xml_dumps_jobs_sorted)), chunksize=GROUP_SIZE)
 
-    with concurrent.futures.ProcessPoolExecutor(GROUP_SIZE) as executor:
-        executor.map(_job, range(len(wikipedia_xml_dumps_jobs_sorted)))
+    from collections import Counter
+    import glob
+    combined_counts = Counter()
+    for file in glob.glob("./tmp/*"):
+        print(file)
+        with open(file, 'r') as f:
+            for line in f.readlines():
+                word, count = line.strip().split()
+                combined_counts.update({word:int(count)})
+
+    with open("wiki_dict", 'w') as f:
+        for k,v in combined_counts.most_common():
+            f.write("{} {}\n".format(k,v) )

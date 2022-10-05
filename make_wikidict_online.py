@@ -28,7 +28,6 @@ Example:
 """
 
 
-import logging
 import sys
 import os
 import re
@@ -37,14 +36,11 @@ from collections import Counter
 
 from lxml import etree
 from concurrent.futures import ProcessPoolExecutor
-import multiprocessing
 
 # Wiki is first scanned for all distinct word types (~7M). The types that
 # appear in more than 10% of articles are removed and from the rest, the
 # DEFAULT_DICT_SIZE most frequent types are kept.
 DEFAULT_DICT_SIZE = 100000
-
-
 
 ARTICLE_MIN_WORDS = 50
 """Ignore shorter articles (after full preprocessing)."""
@@ -313,9 +309,6 @@ if __name__ == '__main__':
     inp = sys.argv[1]
     #cpu_count = multiprocessing.cpu_count()
     concurrent_tasks = 16  # selected ad-hoc, increase if you want..
-    online = 'online' in program
-    debug = 'nodebug' not in program
-    import uuid
 
     wiki_word_dict = Counter()
 
@@ -325,14 +318,11 @@ if __name__ == '__main__':
     started = False
     active_jobs=[]
 
-    with ProcessPoolExecutor(max_workers=concurrent_tasks) as executor, bz2.BZ2File(inp, "rb") as f:
+    with ProcessPoolExecutor(max_workers=concurrent_tasks) as executor, \
+            bz2.BZ2File(inp, "rb") as f:
         while True:
-            try:
-                line = f.readline()
-                count+=1
-            except Exception as e:
-                print(e)
-                break
+            line = f.readline()
+            count+=1
             if b"<page>\n" in line:
                 # start of page (article)
                 started = True
@@ -359,12 +349,19 @@ if __name__ == '__main__':
             if not line:
                 break
 
-            # Every 500,000 lines, dump hapax legomenon, and continue processing
-            if ((count % 500000) == 0):
-                print(f"processed lines: {count:,} articles: {articles:,}, words: {len(wiki_word_dict):,}")
+            # Every 10**7 lines, dump hapax legomenon, and continue processing
+            if ((count % 10**7) == 0):
+                print(f"processed lines: {count:,} articles: {articles:,}, words: {len(wiki_word_dict):,}", end=' removed hapax legomenon... ')
                 wiki_word_dict = Counter({k:v for k,v in wiki_word_dict.items() if v>1})
-                print(len(wiki_word_dict))
-                print("Writing to file wiki_dict", end=' ')
+                print(f"len freq list without HL:{len(wiki_word_dict):,}")
                 with open(outp, 'w') as f_partial:
                     for k,v in  wiki_word_dict.most_common():
                         f_partial.write("{} {}\n".format(k,v) )
+
+        print("Final:")
+        print(f"processed lines: {count:,} articles: {articles:,}, words: {len(wiki_word_dict):,}", end=' removed hapax legomenon... ')
+        wiki_word_dict = Counter({k:v for k,v in wiki_word_dict.items() if v>1})
+        print(f"len freq list without HL:{len(wiki_word_dict):,}")
+        with open(outp, 'w') as f_partial:
+            for k,v in  wiki_word_dict.most_common():
+                f_partial.write("{} {}\n".format(k,v) )
