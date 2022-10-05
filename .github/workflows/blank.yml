@@ -13,9 +13,6 @@ jobs:
       uses: actions/checkout@master
     - name: download jq
       uses: sergeysova/jq-action@v2
-    - name: get wiki data
-      run: |
-         MAX_DOWNLOAD_PROCS=30; while IFS= read line; do ((current=current%MAX_DOWNLOAD_PROCS)); ((current++==0)) && wait; curl -Lo "${line/https:\/\/dumps.wikimedia.org\/enwiki\/latest\//}" $line & done< <( curl "https://dumps.wikimedia.org/enwiki/latest/" | grep -Po "\"enwiki-latest-pages-articles-multistream[0-9]+.xml-.*.bz2\"" | tr -d '"' | sed -re 's|^|https://dumps.wikimedia.org/enwiki/latest/|g;' | sort -u ) ; wait
     - name: Set up Python 3.8
       uses: actions/setup-python@v2
       with:
@@ -24,7 +21,7 @@ jobs:
       timeout-minutes: 780
       run: |
         python -m pip install lxml
-        python run_wikidict_jobs.py
+        python run_wikidict_jobs.py  # Parse multiple dumped wikipedia page xml batches in effort to retrieve word frequencies to rank wiktionary words
         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | \
           jq --raw-output -c '. | select(.lang_code=="en")? | {word: .word, related: .related, derived: .derived, forms: .forms, pos: .pos, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | \
           perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | \
