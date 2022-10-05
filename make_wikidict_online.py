@@ -308,73 +308,63 @@ def _job(current_lines:list):
 
 if __name__ == '__main__':
     program = os.path.basename(sys.argv[0].split('.')[0])
-    #logger = logging.getLogger(program)
-
-    #logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s')
-    #logging.root.setLevel(level=logging.INFO)
-    #logger.info("running %s", ' '.join(sys.argv))
-
     # check and process input arguments
-    if len(sys.argv) < 3:
-        print(globals()['__doc__'] % locals())
-        sys.exit(1)
-    inp, outp = sys.argv[1:3]
-    cpu_count = multiprocessing.cpu_count()
-    print(cpu_count)
-    cpu_count += 5
+    outp = sys.argv[2]
+    inp = sys.argv[1]
+    #cpu_count = multiprocessing.cpu_count()
+    concurrent_tasks = 16  # selected ad-hoc, increase if you want..
     online = 'online' in program
     debug = 'nodebug' not in program
+    import uuid
 
     wiki_word_dict = Counter()
-    if online:
-        count=0
-        articles=0
-        xml_lines = []
-        started = False
-        active_jobs=[]
-        with ProcessPoolExecutor(max_workers=cpu_count) as executor, \
-                bz2.BZ2File(inp, "rb") as f:
-            while True:
 
-                try:
-                    line = f.readline()
-                except Exception as e:
-                    print(e)
-                    break
+    count=0
+    articles=0
+    xml_lines = []
+    started = False
+    active_jobs=[]
+
+    with ProcessPoolExecutor(max_workers=concurrent_tasks) as executor, bz2.BZ2File(inp, "rb") as f:
+        while True:
+            try:
+                line = f.readline()
                 count+=1
-                if b"<page>\n" in line:
-                    #start
-                    started = True
-                    xml_lines.append(line)
-                elif b"</page>\n" in line:
-                    articles+=1
-                    #end
-                    started = False
-                    xml_lines.append(line)
-                    if len(active_jobs) < cpu_count:
-                        active_jobs.append(executor.submit(_job, xml_lines))
-                    elif len(active_jobs) == cpu_count:
-                        while True:
-                            for active_job_idx in range(len(active_jobs)):
-                                if active_jobs[active_job_idx].done():
-                                    wiki_word_dict.update(active_jobs[active_job_idx].result())
-                                    break
-                            active_jobs.pop(active_job_idx)
-                            break
-                    xml_lines = []
+            except Exception as e:
+                print(e)
+                break
+            if b"<page>\n" in line:
+                # start of page (article)
+                started = True
+                xml_lines.append(line)
+            elif b"</page>\n" in line:
+                articles+=1
+                #end of page (article)
+                started = False
+                xml_lines.append(line)
+                if len(active_jobs) < concurrent_tasks:
+                    active_jobs.append(executor.submit(_job, xml_lines))
+                elif len(active_jobs) == concurrent_tasks:
+                    while True:
+                        for active_job_idx in range(len(active_jobs)):
+                            if active_jobs[active_job_idx].done():
+                                wiki_word_dict.update(active_jobs[active_job_idx].result())
+                                break
+                        active_jobs.pop(active_job_idx)
+                        break
+                xml_lines = []
+            elif started:
+                xml_lines.append(line)
 
-                elif started:
-                    xml_lines.append(line)
+            if not line:
+                break
 
-                if not line:
-                    break
-                #if ((count % 100000) == 0) and (count > 0):
-                if ((count % 1000000) == 0):
-                    print(f"processed lines: {count} articles: {articles}, words: {len(wiki_word_dict)}")
-                    #print(f"Dumping hapax legomenon", end = ' ')
-                    wiki_word_dict = Counter({k:v for k,v in wiki_word_dict.items() if v>1})
-                    print(len(wiki_word_dict))
-                    print("Writing to file wiki_dict", end=' ')
-                    with open(outp, 'w') as f_partial:
-                        for k,v in  wiki_word_dict.most_common():
-                            f_partial.write("{} {}\n".format(k,v) )
+            # Every 500,000 lines, dump hapax legomenon, and continue processing
+            if ((count % 500000) == 0):
+                print(f"processed lines: {count:,} articles: {articles:,}, words: {len(wiki_word_dict):,}")
+                wiki_word_dict = Counter({k:v for k,v in wiki_word_dict.items() if v>1})
+                print(len(wiki_word_dict))
+                print("Writing to file wiki_dict", end=' ')
+                with open(outp, 'w') as f_partial:
+                    for k,v in  wiki_word_dict.most_common():
+                        f_partial.write("{} {}\n".format(k,v) )
