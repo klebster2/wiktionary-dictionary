@@ -22,6 +22,7 @@ jobs:
       run: |
         python -m pip install lxml
         python run_wikidict_jobs.py  # Parse multiple dumped wikipedia page xml batches in effort to retrieve word frequencies to rank wiktionary words
+        python -m pip install ruamel-yaml
         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | \
           jq --raw-output -c '. | select(.lang_code=="en")? | {word: .word, related: .related, derived: .derived, forms: .forms, pos: .pos, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | \
           perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | \
