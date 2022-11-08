@@ -27,7 +27,7 @@ jobs:
           jq --raw-output -c '. | select(.lang_code=="en")? | {word: .word, related: .related, derived: .derived, forms: .forms, pos: .pos, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | \
           perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | \
           python ./check_chars.py <(awk -F " " '{if ($2>50) {print $1} }' wiki_dict ) > _etymologies.json
-        jq --slurp --sort-keys '. | .[]'  _etymologies.json > etymologies.json
+        jq --sort-keys '. | .[]'  _etymologies.json > etymologies.json
     - name: Commit changes
       uses: EndBug/add-and-commit@v9
       with:
