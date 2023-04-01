@@ -167,11 +167,10 @@ if __name__ == "__main__":
         if word in wiki_dict.keys():
             pos_list = wiki_dict[word]
             del loaded_line["word"]  # use word as key
-            loaded_line_shortened = {'ety':loaded_line.get('etymology_text'), 'pos':loaded_line.get('pos')}
+            loaded_line_shortened = {'ety':loaded_line.get('etymology_text'), 'pos':loaded_line.get('pos'), 'sounds':loaded_line.get("sounds")}
             pos_list.append(loaded_line_shortened)
             wiki_dict.update({word:pos_list})
         else:
             del loaded_line["word"]  # use word as key
-            wiki_dict.update({word:[{'ety':loaded_line.get('etymology_text'), 'pos':loaded_line.get('pos')}]})
+            wiki_dict.update({word:[{'ety':loaded_line.get('etymology_text'), 'pos':loaded_line.get('pos'), 'sounds':loaded_line.get("sounds")}]})
     print(json.dumps(wiki_dict, indent=2))
-
