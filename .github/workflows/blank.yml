@@ -24,7 +24,7 @@ jobs:
         python run_wikidict_jobs.py  # Parse multiple dumped wikipedia page xml batches in effort to retrieve word frequencies to rank wiktionary words
         python -m pip install ruamel-yaml
         curl "https://kaikki.org/dictionary/raw-wiktextract-data.json" | \
-          jq --raw-output -c '. | select(.lang_code=="en")? | {word: .word, related: .related, derived: .derived, forms: .forms, pos: .pos, senses: .senses, etymology_text: .etymology_text, sounds: .sounds}' | \
+          jq --raw-output -c '. | select(.lang_code=="en")? | {word: .word, related: .related, derived: .derived, forms: .forms, pos: .pos, senses: .senses, etymology_text: .etymology_text}' | \
           perl -ne 'use Digest::MD5 qw(md5_base64); print unless $seen{md5_base64($_)}++' | \
           python ./check_chars.py <(awk -F " " '{if ($2>50) {print $1} }' wiki_dict ) > _etymologies.json
         jq --sort-keys '.' _etymologies.json > etymologies.json
