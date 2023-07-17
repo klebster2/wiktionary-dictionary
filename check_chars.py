@@ -127,7 +127,7 @@ if __name__ == "__main__":
             word = entry.get("word")
             # def: Each word should be an actual word with 0 spaces
             if not re.match("^[a-zA-Z]*[-.']*[a-zA-Z]+$", word):
-            #     continue
+                continue
             # sounds = []
             # # clean sounds
             # for s in entry.get('sounds'):
